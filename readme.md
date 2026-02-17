@@ -2,7 +2,7 @@
 
 A modern, responsive Single Page Application (SPA) for social media analytics, built with **React** and **Vite**. This project focuses on speed, modularity, and a premium user experience.
 
-*Developed in collaboration with **Google Antigravity**.*
+*Developed in collaboration with **Google Antigravity**. using npx create vite@latest with react template*
 
 ## Table of Contents
 
