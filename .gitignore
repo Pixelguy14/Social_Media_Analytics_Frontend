@@ -1,0 +1,24 @@
+# Logs
+datatracker-ui/logs
+datatracker-ui/*.log
+datatracker-ui/npm-debug.log*
+datatracker-ui/yarn-debug.log*
+datatracker-ui/yarn-error.log*
+datatracker-ui/pnpm-debug.log*
+datatracker-ui/lerna-debug.log*
+
+datatracker-ui/node_modules
+datatracker-ui/dist
+datatracker-ui/dist-ssr
+datatracker-ui/*.local
+
+# Editor directories and files
+datatracker-ui/.vscode/*
+datatracker-ui/!.vscode/extensions.json
+datatracker-ui/.idea
+datatracker-ui/.DS_Store
+datatracker-ui/*.suo
+datatracker-ui/*.ntvs*
+datatracker-ui/*.njsproj
+datatracker-ui/*.sln
+datatracker-ui/*.sw?
