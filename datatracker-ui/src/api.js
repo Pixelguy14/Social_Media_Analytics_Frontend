@@ -1,10 +1,22 @@
 import axios from 'axios';
 
+// SECURITY: Base URL loaded from environment to avoid leaking internal
+// network topology (IPs, ports) into version control.
+if (!import.meta.env.VITE_API_BASE_URL) {
+    throw new Error(
+        '[API] Missing VITE_API_BASE_URL environment variable. ' +
+        'Copy .env.example to .env and set it.'
+    );
+}
+
 const api = axios.create({
-    baseURL: 'http://localhost:8081/api',
+    baseURL: import.meta.env.VITE_API_BASE_URL,
 });
 
-// Request interceptor to add the auth token header to requests
+// SECURITY: The JWT is stored in localStorage for simplicity. This means
+// any successful XSS attack can steal it. The CSP meta tag in index.html
+// is the primary mitigation. For production, migrate to httpOnly cookies
+// set by the Go backend (Set-Cookie: HttpOnly; Secure; SameSite=Strict).
 api.interceptors.request.use(
     (config) => {
         const token = localStorage.getItem('token');
@@ -27,11 +39,11 @@ api.interceptors.response.use(
         if (error.response && error.response.status === 401) {
             // Auto-logout if waiting on 401
             localStorage.removeItem('token');
-            // Optional: Redirect to login or just let the UI handle the empty token
-            window.dispatchEvent(new Event('storage')); // Trigger a storage event so other tabs/components might react
+            window.dispatchEvent(new Event('storage'));
         }
         return Promise.reject(error);
     }
 );
 
 export default api;
+

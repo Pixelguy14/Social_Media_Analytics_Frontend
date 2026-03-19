@@ -1,143 +1,188 @@
-import React, { useState } from 'react';
-import { useForm } from 'react-hook-form';
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import useAppStore from '../store/useAppStore';
+import Panel from '../components/Panel';
+import Button from '../components/Button';
+import api from '../api';
+import { auth } from '../lib/firebase';
+import { signInWithCustomToken } from 'firebase/auth';
 import Swal from 'sweetalert2';
 import { useAuth } from '../context/AuthContext';
 
 const AuthPage = () => {
-    const { login, register } = useAuth();
-    const [authMode, setAuthMode] = useState('login');
+    const { login, register: apiRegister, user, logout: apiLogout } = useAuth();
+    const { logout: guestLogout, username, firebaseToken } = useAppStore();
+    
+    // Auth Modes: 0: Guest, 1: Login, 2: Register
+    const [mode, setMode] = useState(0); 
+    
+    const [nameInput, setNameInput] = useState('');
+    const [email, setEmail] = useState('');
+    const [usernameInput, setUsernameInput] = useState('');
+    const [password, setPassword] = useState('');
     const [loading, setLoading] = useState(false);
+    
+    const { setUsername, setFirebaseToken } = useAppStore();
+    const navigate = useNavigate();
 
-    const { register: registerForm, handleSubmit, formState: { errors } } = useForm();
+    // Reset if disconnected manually
+    const handleReset = () => {
+        guestLogout();
+    };
 
-    const onAuthSubmit = async (data) => {
-        setLoading(true);
-        let result;
-
-        if (authMode === 'login') {
-            result = await login(data.email, data.password);
-        } else {
-            result = await register(data.username, data.email, data.password);
+    // Redirect if fully connected
+    useEffect(() => {
+        if (firebaseToken && username) {
+            navigate('/lobby');
         }
+    }, [firebaseToken, username, navigate]);
 
-        if (result.success) {
-            Swal.fire({
-                icon: 'success',
-                title: authMode === 'login' ? 'Welcome back!' : 'Account Created!',
-                toast: true,
-                position: 'top-end',
-                showConfirmButton: false,
-                timer: 1500
-            });
+    // Token Claim logic (The "Handshake")
+    const claimIdentity = async (targetUsername) => {
+        try {
+            const res = await api.post('/inktochat/token', { username: targetUsername });
+            const { token } = res.data;
+            await signInWithCustomToken(auth, token);
+            setFirebaseToken(token);
+            setUsername(targetUsername);
+            navigate('/lobby');
+        } catch (e) {
+            Swal.fire('Identity Blocked', e.response?.data?.error || 'Claim rejected', 'error');
+        }
+    };
+
+    const handleGuestJoin = async (e) => {
+        e.preventDefault();
+        if (!nameInput.trim()) return;
+        setLoading(true);
+        await claimIdentity(nameInput);
+        setLoading(false);
+    };
+
+    const handleAccountLogin = async (e) => {
+        e.preventDefault();
+        if (!email || !password) return;
+        setLoading(true);
+        
+        const res = await login(email, password);
+        if (res.success) {
+            // After DataTracker login, claim using the account name
+            const savedUser = JSON.parse(localStorage.getItem('user'));
+            await claimIdentity(savedUser.username);
         } else {
-            Swal.fire({
-                icon: 'error',
-                title: 'Authentication Failed',
-                text: result.error
-            });
+            Swal.fire('Access Denied', res.error, 'error');
+        }
+        setLoading(false);
+    };
+
+    const handleRegister = async (e) => {
+        e.preventDefault();
+        setLoading(true);
+        const res = await apiRegister(nameInput, email, usernameInput, password);
+        if (res.success) {
+            Swal.fire('Success', 'Account created! Logging in...', 'success');
+            await claimIdentity(usernameInput);
+        } else {
+            Swal.fire('Error', res.error, 'error');
         }
         setLoading(false);
     };
 
     return (
-        <div className="flex items-center justify-center min-h-screen bg-gray-100 px-4 sm:px-0">
-            <div className="w-full max-w-md p-6 sm:p-8 bg-white rounded-lg shadow-lg">
-                <h2
-                    id="login-heading"
-                    className="
-                    text-2xl font-bold text-center mb-4 
-                    focus:outline-none
-                    hover:text-blue-600
-                    transition-colors duration-300 ease-in-out">
-                    {authMode === 'login' ? 'Login' : 'Create Account'}
-                </h2>
+        <div className="flex flex-col items-center justify-center min-h-screen bg-picto-bg px-4 overflow-hidden relative">
+            <div className="absolute inset-0 pointer-events-none opacity-5 dither-mask"></div>
 
-                <form onSubmit={handleSubmit(onAuthSubmit)} className="space-y-4">
-
-                    {/* Register (username, email, password)*/}
-                    {/* Login (email, password)*/}
-
-                    {authMode === 'register' && (
-                        <div>
-                            <label
-                                id="username-label"
-                                htmlFor="username"
-                                className="
-                                block text-sm font-medium 
-                                text-gray-700
-                                focus:outline-none  
-                                hover:text-blue-600 
-                                transition-colors duration-300 ease-in-out">
-                                Username
-                            </label>
-
-                            <input
-                                id="username-input"
-                                {...registerForm('username', { required: 'Username is required' })}
-                                className="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                            />
-                            {errors.username && <span className="text-red-500 text-xs">{errors.username.message}</span>}
-                        </div>
-                    )}
-
-                    <div>
-                        <label
-                            id="email-label"
-                            htmlFor="email"
-                            className="
-                                block text-sm font-medium 
-                                text-gray-700
-                                focus:outline-none  
-                                hover:text-blue-600 
-                                transition-colors duration-300 ease-in-out">Email</label>
-                        <input
-                            id="email-input"
-                            type="email"
-                            {...registerForm('email', { required: 'Email is required' })}
-                            className="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                        />
-                        {errors.email && <span className="text-red-500 text-xs">{errors.email.message}</span>}
-                    </div>
-
-                    <div>
-                        <label
-                            id="password-label"
-                            htmlFor="password"
-                            className="
-                                block text-sm font-medium 
-                                text-gray-700
-                                focus:outline-none  
-                                hover:text-blue-600 
-                                transition-colors duration-300 ease-in-out">Password</label>
-                        <input
-                            id="password-input"
-                            type="password"
-                            {...registerForm('password', { required: 'Password is required' })}
-                            className="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                        />
-                        {errors.password && <span className="text-red-500 text-xs">{errors.password.message}</span>}
-                    </div>
-
-                    <button
-                        type="submit"
-                        id="submit-button"
-                        disabled={loading}
-                        className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
+            <Panel title="InkToChat Gateway" className="w-full max-w-sm relative z-10 shadow-lg">
+                <div className="flex border-b-2 border-picto-border mb-6 font-ds text-xs font-bold uppercase tracking-tight">
+                    <button 
+                        onClick={() => setMode(0)}
+                        className={`flex-1 py-3 transition-colors ${mode === 0 ? 'bg-picto-border text-white' : 'bg-picto-panel hover:bg-gray-200 text-picto-border'}`}
                     >
-                        {loading ? 'Processing...' : (authMode === 'login' ? 'Sign In' : 'Sign Up')}
+                        GUEST
                     </button>
-                </form>
-
-                <div className="mt-4 text-center">
-                    <button
-                        id="toggle-auth-mode"
-                        onClick={() => setAuthMode(authMode === 'login' ? 'register' : 'login')}
-                        className="text-sm text-blue-600 hover:text-blue-500 hover:underline focus:outline-none"
+                    <button 
+                        onClick={() => setMode(1)}
+                        className={`flex-1 py-3 border-l-2 border-picto-border transition-colors ${mode === 1 ? 'bg-picto-accent text-white' : 'bg-picto-panel hover:bg-gray-200 text-picto-border'}`}
                     >
-                        {authMode === 'login' ? 'Need an account? Register' : 'Have an account? Login'}
+                        LOGIN
+                    </button>
+                    <button 
+                        onClick={() => setMode(2)}
+                        className={`flex-1 py-3 border-l-2 border-picto-border transition-colors ${mode === 2 ? 'bg-blue-500 text-white' : 'bg-picto-panel hover:bg-gray-200 text-picto-border'}`}
+                    >
+                        REGISTER
                     </button>
                 </div>
-            </div>
+
+                <div className="px-2 pb-2">
+                    {mode === 0 && (
+                        <form onSubmit={handleGuestJoin} className="flex flex-col gap-4 py-2 font-ds">
+                            <p className="text-xs opacity-70 text-center uppercase tracking-wider">Choose a temporary alias:</p>
+                            <input
+                                type="text"
+                                value={nameInput}
+                                onChange={(e) => setNameInput(e.target.value)}
+                                disabled={loading}
+                                maxLength={10}
+                                className="bg-white border-2 border-picto-border p-3 outline-none focus:border-picto-accent text-sm"
+                                placeholder="NICKNAME"
+                            />
+                            <Button type="submit" disabled={loading || !nameInput.trim()} className="w-full h-14 uppercase font-bold">
+                                {loading ? 'CONNECTING...' : 'JOIN AS GUEST'}
+                            </Button>
+                        </form>
+                    )}
+
+                    {mode === 1 && (
+                        <form onSubmit={handleAccountLogin} className="flex flex-col gap-4 py-2 font-ds">
+                            <p className="text-xs opacity-70 text-center uppercase tracking-wider">Secure DataHub Login:</p>
+                            <input
+                                type="email"
+                                value={email}
+                                onChange={(e) => setEmail(e.target.value)}
+                                className="bg-white border-2 border-picto-border p-3 text-sm outline-none focus:border-picto-accent"
+                                placeholder="EMAIL"
+                            />
+                            <input
+                                type="password"
+                                value={password}
+                                onChange={(e) => setPassword(e.target.value)}
+                                className="bg-white border-2 border-picto-border p-3 text-sm outline-none focus:border-picto-accent"
+                                placeholder="PASSWORD"
+                            />
+                            <Button type="submit" disabled={loading} className="w-full h-14 !bg-picto-accent text-white uppercase font-bold">
+                                {loading ? 'AUTHENTICATING...' : 'SECURE LOGIN'}
+                            </Button>
+                        </form>
+                    )}
+
+                    {mode === 2 && (
+                        <form onSubmit={handleRegister} className="flex flex-col gap-4 py-2 font-ds">
+                            <p className="text-xs opacity-70 text-center uppercase tracking-wider">Create Permanent Identity:</p>
+                            <input type="text" value={nameInput} onChange={(e) => setNameInput(e.target.value)} className="bg-white border-2 border-picto-border p-3 text-sm outline-none focus:border-picto-accent" placeholder="FULL NAME" />
+                            <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="bg-white border-2 border-picto-border p-3 text-sm outline-none focus:border-picto-accent" placeholder="EMAIL" />
+                            <input type="text" value={usernameInput} onChange={(e) => setUsernameInput(e.target.value)} className="bg-white border-2 border-picto-border p-3 text-sm outline-none focus:border-picto-accent" placeholder="USERNAME" />
+                            <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} className="bg-white border-2 border-picto-border p-3 text-sm outline-none focus:border-picto-accent" placeholder="PASSWORD" />
+                            <Button type="submit" disabled={loading} className="w-full h-14 !bg-blue-500 text-white uppercase font-bold">
+                                {loading ? 'ENROLLING...' : 'REGISTER & JOIN'}
+                            </Button>
+                        </form>
+                    )}
+
+                    {user && (
+                        <div className="mt-6 pt-6 border-t-2 border-dashed border-picto-border text-center">
+                            <p className="text-xs mb-3 uppercase font-bold text-picto-accent">Account Detected: {user.username}</p>
+                            <div className="flex flex-col gap-3">
+                                <Button onClick={() => claimIdentity(user.username)} className="text-sm !bg-blue-500 text-white py-2">RESUME SESSION</Button>
+                                <Button onClick={() => { apiLogout(); guestLogout(); }} className="text-xs !bg-gray-400 text-white py-2">SIGN OUT</Button>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            </Panel>
+            <footer className="mt-8 text-xs font-ds text-picto-border opacity-50 uppercase tracking-[0.2em] text-center">
+                IDENTITY PROTOCOL v2.1 • PIC-004-GATEWAY
+            </footer>
         </div>
     );
 };

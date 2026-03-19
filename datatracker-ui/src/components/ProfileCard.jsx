@@ -1,20 +1,33 @@
+/* eslint-disable */
 import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import Swal from 'sweetalert2';
 import api from '../api';
 import { useAuth } from '../context/AuthContext';
+import Panel from './Panel';
+import Button from './Button';
 
 const ProfileCard = () => {
     const { user, refreshProfile, logout } = useAuth();
     const [isEditing, setIsEditing] = useState(false);
     const [loading, setLoading] = useState(false);
 
-    const { register, handleSubmit, setValue } = useForm();
+    const { register, handleSubmit, setValue, watch } = useForm();
+    const currentColor = watch('color') || user?.color || 'black';
 
+    const AVAILABLE_COLORS = [
+        { name: 'Black', value: 'black' },
+        { name: 'Blue', value: '#3b82f6' },
+        { name: 'Green', value: '#22c55e' },
+        { name: 'Purple', value: '#a855f7' },
+        { name: 'Orange', value: '#f97316' },
+        { name: 'Admin Red', value: 'red', adminOnly: true }
+    ];
     const startEditing = () => {
         setValue('name', user.name || '');
         setValue('username', user.username || '');
         setValue('email', user.email || '');
+        setValue('color', user.color || 'black');
         setIsEditing(true);
     };
 
@@ -24,7 +37,7 @@ const ProfileCard = () => {
             await refreshProfile();
             Swal.fire({
                 icon: 'success',
-                title: 'Profile Refreshed',
+                title: 'Data Synced',
                 toast: true,
                 position: 'top-end',
                 showConfirmButton: false,
@@ -57,20 +70,20 @@ const ProfileCard = () => {
 
     const handleDeleteAccount = async () => {
         const result = await Swal.fire({
-            title: 'Are you sure?',
-            text: "You won't be able to revert this!",
+            title: 'Delete Identity?',
+            text: "This will wipe your DataTracker profile!",
             icon: 'warning',
             showCancelButton: true,
             confirmButtonColor: '#d33',
             cancelButtonColor: '#3085d6',
-            confirmButtonText: 'Yes, delete it!'
+            confirmButtonText: 'YES, WIPE IT'
         });
 
         if (result.isConfirmed) {
             setLoading(true);
             try {
                 await api.delete(`/users/${user.id}`);
-                Swal.fire('Deleted!', 'Your account has been deleted.', 'success');
+                Swal.fire('Wiped!', 'Account deleted.', 'success');
                 logout();
             } catch (err) {
                 Swal.fire('Error', 'Failed to delete account', 'error');
@@ -81,67 +94,95 @@ const ProfileCard = () => {
     };
 
     return (
-        <div className="bg-white overflow-hidden shadow rounded-lg">
-            <div className="px-4 py-5 sm:px-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-gray-200">
-                <h3 className="text-lg leading-6 font-medium text-gray-900">My Profile</h3>
-                {!isEditing && (
-                    <div className="flex flex-wrap gap-2 w-full sm:w-auto">
-                        <button onClick={handleRefresh} disabled={loading} className="flex-1 sm:flex-none text-sm text-blue-600 hover:underline disabled:opacity-50">Refresh</button>
-                        <button onClick={startEditing} disabled={loading} className="flex-1 sm:flex-none inline-flex justify-center items-center px-3 py-1.5 border border-transparent text-sm font-medium rounded text-indigo-700 bg-indigo-100 hover:bg-indigo-200 disabled:opacity-50">Edit</button>
-                        <button onClick={handleDeleteAccount} disabled={loading} className="flex-1 sm:flex-none inline-flex justify-center items-center px-3 py-1.5 border border-transparent text-sm font-medium rounded text-red-700 bg-red-100 hover:bg-red-200 disabled:opacity-50">Delete</button>
-                    </div>
-                )}
-            </div>
-            <div className="px-4 py-5 sm:p-6">
+        <Panel 
+            title="User Profile" 
+            subtitle="Persistent Identity"
+            className="w-full max-w-4xl mx-auto"
+        >
+            <div className="flex flex-col gap-6">
                 {!isEditing ? (
-                    <dl className="grid grid-cols-1 gap-x-4 gap-y-6 sm:grid-cols-2 lg:grid-cols-3">
-                        <div>
-                            <dt className="text-sm font-medium text-gray-500">Full name</dt>
-                            <dd className="mt-1 text-sm text-gray-900">{user?.name || '-'}</dd>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 p-2">
+                        <div className="border-2 border-picto-panel-dark p-3 bg-white/50">
+                            <dt className="text-xs uppercase opacity-60">Full Name</dt>
+                            <dd className="text-lg font-bold">{user?.name || '-'}</dd>
                         </div>
-                        <div>
-                            <dt className="text-sm font-medium text-gray-500">Username</dt>
-                            <dd className="mt-1 text-sm text-gray-900">{user?.username}</dd>
+                        <div className="border-2 border-picto-panel-dark p-3 bg-white/50">
+                            <dt className="text-xs uppercase opacity-60">Username</dt>
+                            <dd className="text-lg font-bold text-picto-accent">{user?.username}</dd>
                         </div>
-                        <div>
-                            <dt className="text-sm font-medium text-gray-500">Email address</dt>
-                            <dd className="mt-1 text-sm text-gray-900 break-all">{user?.email}</dd>
+                        <div className="border-2 border-picto-panel-dark p-3 bg-white/50">
+                            <dt className="text-xs uppercase opacity-60">Role</dt>
+                            <dd className="text-lg font-bold uppercase">{user?.role}</dd>
                         </div>
-                        <div>
-                            <dt className="text-sm font-medium text-gray-500">Role</dt>
-                            <dd className="mt-1"><span className="inline-block text-sm text-gray-900 uppercase tracking-wide px-3 py-1 rounded bg-gray-100">{user?.role}</span></dd>
+                        <div className="md:col-span-2 border-2 border-picto-panel-dark p-3 bg-white/50">
+                            <dt className="text-xs uppercase opacity-60">Email Address</dt>
+                            <dd className="text-lg break-all">{user?.email}</dd>
                         </div>
-                        <div className="sm:col-span-2 lg:col-span-3">
-                            <dt className="text-sm font-medium text-gray-500">User ID</dt>
-                            <dd className="mt-1 text-xs text-gray-400 font-mono break-all">{user?.id}</dd>
+                        <div className="border-2 border-picto-panel-dark p-3 bg-white/50">
+                            <dt className="text-xs uppercase opacity-60">Name Color</dt>
+                            <dd className="text-lg font-bold uppercase" style={{ color: user?.color || 'black' }}>
+                                {user?.color || 'Black'}
+                            </dd>
                         </div>
-                    </dl>
+                        <div className="lg:col-span-3 border-2 border-picto-panel-dark p-2 bg-black/5">
+                            <dt className="text-[10px] uppercase opacity-40 font-mono italic">Trace ID</dt>
+                            <dd className="text-[10px] font-mono opacity-50 break-all">{user?.id}</dd>
+                        </div>
+                    </div>
                 ) : (
-                    <form onSubmit={handleSubmit(onUpdateProfile)} className="grid grid-cols-1 gap-y-6 sm:grid-cols-2 gap-x-4">
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700">Name</label>
-                            <input {...register('name')} className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:ring-indigo-500 focus:border-indigo-500 text-sm" />
+                    <form onSubmit={handleSubmit(onUpdateProfile)} className="grid grid-cols-1 md:grid-cols-2 gap-4 p-2">
+                        <div className="flex flex-col gap-1">
+                            <label className="text-xs uppercase font-bold">Display Name</label>
+                            <input {...register('name')} className="bg-white border-2 border-picto-border p-2 focus:outline-none focus:border-picto-accent" />
                         </div>
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700">Username</label>
-                            <input {...register('username', { required: true })} className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:ring-indigo-500 focus:border-indigo-500 text-sm" />
+                        <div className="flex flex-col gap-1">
+                            <label className="text-xs uppercase font-bold">Username</label>
+                            <input {...register('username', { required: true })} className="bg-white border-2 border-picto-border p-2 focus:outline-none focus:border-picto-accent" />
                         </div>
-                        <div className="sm:col-span-2">
-                            <label className="block text-sm font-medium text-gray-700">Email</label>
-                            <input type="email" {...register('email', { required: true })} className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:ring-indigo-500 focus:border-indigo-500 text-sm" />
+                        <div className="md:col-span-2 flex flex-col gap-1">
+                            <label className="text-xs uppercase font-bold">Email</label>
+                            <input type="email" {...register('email', { required: true })} className="bg-white border-2 border-picto-border p-2 focus:outline-none focus:border-picto-accent" />
                         </div>
-                        <div className="sm:col-span-2">
-                            <label className="block text-sm font-medium text-gray-700">New Password (Optional)</label>
-                            <input type="password" {...register('password')} placeholder="Leave blank to keep current" className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:ring-indigo-500 focus:border-indigo-500 text-sm" />
+                        <div className="md:col-span-2 flex flex-col gap-1">
+                            <label className="text-xs uppercase font-bold">New Password</label>
+                            <input type="password" {...register('password')} placeholder="Keep blank if unchanged" className="bg-white border-2 border-picto-border p-2 focus:outline-none focus:border-picto-accent placeholder:opacity-30" />
                         </div>
-                        <div className="sm:col-span-2 flex flex-col sm:flex-row justify-end gap-3 mt-4">
-                            <button type="button" onClick={() => setIsEditing(false)} className="w-full sm:w-auto bg-white py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50 order-2 sm:order-1">Cancel</button>
-                            <button type="submit" disabled={loading} className="w-full sm:w-auto inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 order-1 sm:order-2">Save Changes</button>
+                        
+                        <div className="md:col-span-2 flex flex-col gap-2 mt-2">
+                            <label className="text-xs uppercase font-bold">Name Color</label>
+                            <div className="flex gap-3">
+                                {AVAILABLE_COLORS.map(c => {
+                                    if (c.adminOnly && user?.role !== 'admin') return null;
+                                    return (
+                                        <label key={c.value} className="flex items-center gap-1 cursor-pointer">
+                                            <input type="radio" value={c.value} {...register('color')} className="hidden peer" />
+                                            <div 
+                                                className={`w-8 h-8 rounded-full border-4 transition-all shadow-sm ${currentColor === c.value ? 'border-picto-accent scale-110' : 'border-transparent hover:scale-105'}`}
+                                                style={{ backgroundColor: c.value === 'black' ? '#000' : c.value }}
+                                                title={c.name}
+                                            ></div>
+                                        </label>
+                                    );
+                                })}
+                            </div>
+                        </div>
+                        
+                        <div className="md:col-span-2 flex justify-end gap-2 mt-4">
+                            <Button type="button" onClick={() => setIsEditing(false)} className="!bg-gray-400">CANCEL</Button>
+                            <Button type="submit" disabled={loading}>SAVE</Button>
                         </div>
                     </form>
                 )}
+
+                {!isEditing && (
+                    <div className="flex flex-wrap gap-2 justify-end border-t-2 border-picto-panel-dark pt-4">
+                        <Button onClick={handleRefresh} disabled={loading} className="!bg-blue-500 text-xs">SYNC</Button>
+                        <Button onClick={startEditing} disabled={loading} className="text-xs">EDIT</Button>
+                        <Button onClick={handleDeleteAccount} disabled={loading} className="!bg-red-500 text-xs">WIPE</Button>
+                    </div>
+                )}
             </div>
-        </div>
+        </Panel>
     );
 };
 

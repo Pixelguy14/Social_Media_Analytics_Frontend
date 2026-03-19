@@ -22,3 +22,7 @@ datatracker-ui/*.ntvs*
 datatracker-ui/*.njsproj
 datatracker-ui/*.sln
 datatracker-ui/*.sw?
+
+datatracker-ui/src/pages/test.html
+
+datatracker-ui/.env

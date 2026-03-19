@@ -3,6 +3,8 @@ import { useForm } from 'react-hook-form';
 import Swal from 'sweetalert2';
 import api from '../api';
 import { useAuth } from '../context/AuthContext';
+import Panel from './Panel';
+import Button from './Button';
 
 const AdminPanel = () => {
     const { user } = useAuth();
@@ -26,13 +28,7 @@ const AdminPanel = () => {
     };
 
     useEffect(() => {
-        const token = localStorage.getItem('token');
-        if (token) {
-            fetchAllUsers();
-        } else {
-            Swal.fire('Error', 'No session found. Please login.', 'error');
-            // redirect to login
-        }
+        fetchAllUsers();
     }, []);
 
     const openAdminEdit = (targetUser) => {
@@ -47,16 +43,13 @@ const AdminPanel = () => {
         if (!editingUser) return;
         setLoading(true);
         try {
-            console.log('Updating user:', data);
             await api.put(`/users/${editingUser.id}`, { ...data });
-
-            Swal.fire('Updated!', `User ${editingUser.username} updated.`, 'success');
+            Swal.fire('Identity Rewritten', `User ${editingUser.username} updated.`, 'success');
             setEditingUser(null);
             reset();
             fetchAllUsers();
         } catch (err) {
-            console.log('Error updating user:', err);
-            Swal.fire('Error', err.response?.data?.error || 'Failed to update user', 'error');
+            Swal.fire('Error', err.response?.data?.error || 'Update failed', 'error');
         } finally {
             setLoading(false);
         }
@@ -64,24 +57,24 @@ const AdminPanel = () => {
 
     const onAdminDeleteUser = async (targetId) => {
         if (targetId === user.id) {
-            Swal.fire('Action Denied', "You cannot delete yourself from the admin panel.", 'warning');
+            Swal.fire('Access Denied', "Self-deletion is restricted.", 'warning');
             return;
         }
 
         const result = await Swal.fire({
-            title: 'Delete User?',
-            text: "This action cannot be undone by you.",
+            title: 'Delete Identity?',
+            text: "This wipes all user trace data.",
             icon: 'warning',
             showCancelButton: true,
             confirmButtonColor: '#d33',
-            confirmButtonText: 'Yes, delete user'
+            confirmButtonText: 'DELETE'
         });
 
         if (result.isConfirmed) {
             setLoading(true);
             try {
                 await api.delete(`/users/${targetId}`);
-                Swal.fire('Deleted', 'User removed.', 'success');
+                Swal.fire('Wiped!', 'Trace removed.', 'success');
                 fetchAllUsers();
             } catch (err) {
                 Swal.fire('Error', 'Failed to delete user', 'error');
@@ -92,162 +85,84 @@ const AdminPanel = () => {
     };
 
     return (
-        <div className="bg-white overflow-hidden shadow rounded-lg">
-            <div className="px-4 py-5 sm:px-6 flex flex-col sm:flex-row justify-between items-center gap-4 border-b border-gray-200 bg-gray-50">
-                <div className="text-center sm:text-left">
-                    <h3 className="text-lg leading-6 font-medium text-gray-900">Admin Dashboard</h3>
-                    <p className="mt-1 max-w-2xl text-sm text-gray-500">Manage all registered users.</p>
-                </div>
-                <button onClick={fetchAllUsers} disabled={loading} className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-gray-800 hover:bg-gray-700">
-                    {loading ? 'Loading...' : 'Fetch Users'}
-                </button>
+        <Panel 
+            title="User Management" 
+            subtitle="Registered DataHub Identities" 
+            className="w-full"
+        >
+            <div className="flex justify-end mb-4">
+                <Button onClick={fetchAllUsers} disabled={loading} className="text-xs">SYNC DATA</Button>
             </div>
 
-            {allUsers.length > 0 && (
-                <div className="overflow-x-auto">
-                    <div className="inline-block min-w-full overflow-hidden rounded-lg">
-                        <table className="min-w-full divide-y divide-gray-200">
-                            <thead className="bg-gray-50">
-                                <tr>
-                                    <th scope="col" className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User</th>
-                                    <th scope="col" className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Role</th>
-                                    <th scope="col" className="hidden md:table-cell px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
-                                    <th scope="col" className="px-4 sm:px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider"><span className="sr-only">Actions</span></th>
-                                </tr>
-                            </thead>
-                            <tbody className="bg-white divide-y divide-gray-200">
-                                {allUsers.map((u, index) => (
-                                    <tr key={u.id || `user-${index}`}>
-                                        <td className="px-4 sm:px-6 py-4 whitespace-nowrap">
-                                            <div className="flex items-center gap-3">
-                                                <div className="flex-shrink-0 h-10 w-10 bg-gray-300 rounded-full flex items-center justify-center text-white font-bold text-lg">
-                                                    {u.username?.charAt(0).toUpperCase()}
-                                                </div>
-                                                <div className="min-w-0">
-                                                    <div className="text-sm font-medium text-gray-900 truncate">{u.username}</div>
-                                                    <div className="text-xs text-gray-500 truncate">{u.email}</div>
-                                                </div>
-                                            </div>
-                                        </td>
-                                        <td className="px-4 sm:px-6 py-4 whitespace-nowrap">
-                                            <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${u.role === 'admin' ? 'bg-purple-100 text-purple-800' : 'bg-green-100 text-green-800'}`}>
-                                                {u.role}
-                                            </span>
-                                        </td>
-                                        <td className="hidden md:table-cell px-4 sm:px-6 py-4 whitespace-nowrap text-xs text-gray-500 font-mono">
-                                            <span className="truncate">{u.id}</span>
-                                        </td>
-                                        <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-2 sm:space-x-3">
-                                            <button onClick={() => openAdminEdit(u)} className="text-indigo-600 hover:text-indigo-900 text-xs sm:text-sm">Edit</button>
-                                            {u.id !== user.id && (
-                                                <button onClick={() => onAdminDeleteUser(u.id)} className="text-red-600 hover:text-red-900 text-xs sm:text-sm">Delete</button>
-                                            )}
-                                        </td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            )}
+            <div className="overflow-x-auto border-2 border-picto-panel-dark bg-white/20">
+                <table className="min-w-full divide-y-2 divide-picto-panel-dark font-ds">
+                    <thead className="bg-picto-panel-dark">
+                        <tr>
+                            <th className="px-4 py-2 text-left text-xs uppercase tracking-tighter">Identity</th>
+                            <th className="px-4 py-2 text-left text-xs uppercase tracking-tighter">Role</th>
+                            <th className="px-4 py-2 text-right text-xs uppercase tracking-tighter">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody className="divide-y-2 divide-picto-panel-dark">
+                        {allUsers.map((u) => (
+                            <tr key={u.id}>
+                                <td className="px-4 py-3">
+                                    <div className="flex items-center gap-3">
+                                        <div className="h-8 w-8 bg-picto-border text-white flex items-center justify-center font-bold border-2 border-white">
+                                            {u.username?.charAt(0).toUpperCase()}
+                                        </div>
+                                        <div>
+                                            <div className="text-sm font-bold uppercase">{u.username}</div>
+                                            <div className="text-[10px] opacity-60 font-mono lower">{u.email}</div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td className="px-4 py-3">
+                                    <span className={`text-[10px] px-1 font-bold border ${u.role === 'admin' ? 'bg-picto-accent border-white text-white' : 'border-picto-border'}`}>
+                                        {u.role.toUpperCase()}
+                                    </span>
+                                </td>
+                                <td className="px-4 py-3 text-right">
+                                    <div className="flex justify-end gap-2">
+                                        <Button onClick={() => openAdminEdit(u)} className="text-[10px] !py-1">EDIT</Button>
+                                        <Button onClick={() => onAdminDeleteUser(u.id)} className="text-[10px] !bg-red-500 !py-1">X</Button>
+                                    </div>
+                                </td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+            </div>
 
             {/* Admin Edit Modal */}
             {editingUser && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center overflow-x-hidden overflow-y-auto outline-none focus:outline-none p-4">
-                    {/* Backdrop: Darker and blurred for that premium Swal look */}
-                    <div
-                        className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm transition-opacity"
-                        onClick={() => setEditingUser(null)}
-                    ></div>
-
-                    {/* Modal Card */}
-                    <div className="relative w-full max-w-lg mx-auto z-50 transform transition-all">
-                        <div className="relative flex flex-col w-full bg-white border-0 rounded-xl shadow-2xl outline-none focus:outline-none p-4 sm:p-6">
-
-                            {/* Header - Swal Style */}
-                            <div className="text-center pb-4">
-                                <h3 className="text-2xl font-semibold text-gray-800">
-                                    Edit User
-                                </h3>
-                                <p className="text-sm text-gray-500 mt-1 italic">
-                                    Modifying: {editingUser.username}
-                                </p>
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+                    <Panel title="Edit Identity" className="w-full max-w-sm" showCloseBtn onClose={() => setEditingUser(null)}>
+                        <form onSubmit={handleSubmit(onAdminUpdateUser)} className="flex flex-col gap-4 pt-2">
+                            <div className="flex flex-col gap-1">
+                                <label className="text-[10px] uppercase font-bold">Display Name</label>
+                                <input {...register('name')} className="bg-white border-2 border-picto-border p-2 focus:outline-none font-ds" />
                             </div>
-
-                            {/* Body */}
-                            <div className="relative flex-auto py-2">
-                                <form id="adminEditForm" onSubmit={handleSubmit(onAdminUpdateUser)} className="space-y-5">
-                                    <div className="group">
-                                        <label className="block text-xs font-bold uppercase text-gray-500 mb-1 ml-1">Name</label>
-                                        <input
-                                            {...register('name')}
-                                            className="w-full px-4 py-2 text-gray-700 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all outline-none"
-                                        />
-                                    </div>
-
-                                    <div className="group">
-                                        <label className="block text-xs font-bold uppercase text-gray-500 mb-1 ml-1">Username</label>
-                                        <input
-                                            {...register('username')}
-                                            className="w-full px-4 py-2 text-gray-700 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all outline-none"
-                                        />
-                                    </div>
-
-                                    <div className="group">
-                                        <label className="block text-xs font-bold uppercase text-gray-500 mb-1 ml-1">Email</label>
-                                        <input
-                                            {...register('email')}
-                                            className="w-full px-4 py-2 text-gray-700 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all outline-none"
-                                        />
-                                    </div>
-
-                                    <div className="group">
-                                        <label className="block text-xs font-bold uppercase text-gray-500 mb-1 ml-1">Role</label>
-                                        <select
-                                            {...register('role')}
-                                            disabled={editingUser.id === user.id}
-                                            className="w-full px-4 py-2 text-gray-700 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 transition-all outline-none disabled:bg-gray-200 disabled:cursor-not-allowed"
-                                        >
-                                            <option value="user">User</option>
-                                            <option value="admin">Admin</option>
-                                        </select>
-                                        {editingUser.id === user.id && (
-                                            <p className="mt-2 text-[10px] text-red-400 font-medium">Restricted: You cannot change your own administrative permissions.</p>
-                                        )}
-                                    </div>
-
-                                    <div className="group">
-                                        <label className="block text-xs font-bold uppercase text-gray-500 mb-1 ml-1">Password</label>
-                                        <input
-                                            {...register('password')}
-                                            className="w-full px-4 py-2 text-gray-700 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all outline-none"
-                                        />
-                                    </div>
-                                </form>
+                            <div className="flex flex-col gap-1">
+                                <label className="text-[10px] uppercase font-bold">Username</label>
+                                <input {...register('username')} className="bg-white border-2 border-picto-border p-2 focus:outline-none font-ds" />
                             </div>
-
-                            {/* Footer - Swal Styled Buttons */}
-                            <div className="flex items-center justify-center p-4 space-x-3 border-t border-gray-100 mt-4">
-                                <button
-                                    type="submit"
-                                    form="adminEditForm"
-                                    className="px-6 py-2.5 bg-[#3085d6] text-white font-medium text-sm rounded shadow-md hover:bg-[#2b77c0] transition-colors duration-150 ease-in-out"
-                                >
-                                    Save changes
-                                </button>
-                                <button
-                                    type="button"
-                                    onClick={() => setEditingUser(null)}
-                                    className="px-6 py-2.5 bg-[#aaa] text-white font-medium text-sm rounded shadow-md hover:bg-[#999] transition-colors duration-150 ease-in-out"
-                                >
-                                    Cancel
-                                </button>
+                            <div className="flex flex-col gap-1">
+                                <label className="text-[10px] uppercase font-bold">Role</label>
+                                <select {...register('role')} className="bg-white border-2 border-picto-border p-2 focus:outline-none font-ds uppercase text-xs">
+                                    <option value="user">USER</option>
+                                    <option value="admin">ADMIN</option>
+                                </select>
                             </div>
-                        </div>
-                    </div>
+                            <div className="flex justify-end gap-2 mt-4">
+                                <Button type="button" onClick={() => setEditingUser(null)} className="!bg-gray-400">CANCEL</Button>
+                                <Button type="submit">SAVE</Button>
+                            </div>
+                        </form>
+                    </Panel>
                 </div>
             )}
-        </div>
+        </Panel>
     );
 };
 

@@ -1,36 +1,42 @@
 import React from 'react';
-import { AuthProvider, useAuth } from './context/AuthContext';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import useAppStore from './store/useAppStore';
 import AuthPage from './pages/AuthPage';
+import LobbySelection from './pages/LobbySelection';
+import ChatRoom from './pages/ChatRoom';
+import AdminDashboard from './pages/AdminDashboard';
 import Dashboard from './pages/Dashboard';
+import { useAuth } from './context/AuthContext';
 import './index.css';
 
-const AppContent = () => {
+const ProtectedRoute = ({ children }) => {
+  const { firebaseToken } = useAppStore();
+  if (!firebaseToken) return <Navigate to="/" replace />;
+  return children;
+};
+
+const AdminRoute = ({ children }) => {
   const { user, loading } = useAuth();
-
-  // Skeleton Loader for professional UX
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="flex flex-col items-center gap-4">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-600"></div>
-          <p className="text-gray-500 font-medium animate-pulse">Initializing System...</p>
-        </div>
-      </div>
-    );
+  
+  if (loading) return null; // Or a loading spinner
+  
+  if (!user || user.role !== 'admin') {
+    return <Navigate to="/lobby" replace />;
   }
-
-  return (
-    <div className="font-sans text-gray-900 antialiased">
-      {user ? <Dashboard /> : <AuthPage />}
-    </div>
-  );
+  return children;
 };
 
 function App() {
   return (
-    <AuthProvider>
-      <AppContent />
-    </AuthProvider>
+    <BrowserRouter>
+      <Routes>
+        <Route path="/" element={<AuthPage />} />
+        <Route path="/lobby" element={<ProtectedRoute><LobbySelection /></ProtectedRoute>} />
+        <Route path="/room/:roomId" element={<ProtectedRoute><ChatRoom /></ProtectedRoute>} />
+        <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+        <Route path="/admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
+      </Routes>
+    </BrowserRouter>
   );
 }
 

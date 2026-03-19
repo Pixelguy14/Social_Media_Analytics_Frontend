@@ -1,23 +1,60 @@
 @import "tailwindcss";
 
-/* Minimal reset: Let Tailwind handle the rest */
+@font-face {
+  font-family: "Nintendo DS BIOS";
+  src: url("/fonts/nintendo_ds_bios/Nintendo-DS-BIOS.ttf") format("truetype");
+  font-weight: normal;
+  font-style: normal;
+}
+
+@theme {
+  --color-picto-bg: #F8F8F8;
+  --color-picto-panel: #CECECE;
+  --color-picto-border: #424242;
+  --color-picto-accent: #00A2E8;
+  --font-ds: "Nintendo DS BIOS", monospace;
+}
+
+@utility bg-dither {
+  background-image: url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAYAAABytg0kAAAAD0lEQVQImWNgYGBoYAAAAX8Ax9966mUAAAAASUVORK5CYII=");
+}
+
 :root {
-  font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
-  -webkit-font-smoothing: antialiased;
+  font-family: "Nintendo DS BIOS", monospace;
+  -webkit-font-smoothing: none;
   -moz-osx-font-smoothing: grayscale;
 }
 
 body {
   margin: 0;
   min-height: 100vh;
-  /* Removed flex and place-items center */
-  background-color: #f9fafb;
-  /* Light gray background for professional look */
+  background-color: var(--color-picto-bg);
+  color: var(--color-picto-border);
 }
 
-@media (prefers-color-scheme: dark) {
-  body {
-    background-color: #111827;
-    color: white;
-  }
+/* Retro Scrollbar */
+.custom-scrollbar {
+  scrollbar-width: auto;
+  scrollbar-color: #424242 #CECECE; /* thumb track */
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+  width: 12px;
+  display: block;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: #CECECE; /* Match picto-panel for better contrast */
+  border-left: 1px solid #424242;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #424242;
+  border: 1px solid #CECECE;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #00A2E8;
+}
+
+input::placeholder {
+  color: #424242;
+  opacity: 0.4;
 }

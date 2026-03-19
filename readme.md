@@ -1,86 +1,80 @@
-# DataTracker Frontend
+# InkToChat & DataTracker Frontend
 
-A modern, responsive Single Page Application (SPA) for social media analytics, built with **React** and **Vite**. This project focuses on speed, modularity, and a premium user experience.
+A modern, responsive Single Page Application (SPA) built with **React** and **Vite**. This project serves as a dual-modality platform:
+1.  **DataTracker**: A professional analytics suite with permanent accounts.
+2.  **InkToChat**: A "Zero-Friction" replication of the Nintendo DS Pictochat experience.
 
-*Developed in collaboration with **Google Antigravity**. using npx create vite@latest with react template*
-
-## Table of Contents
-
-- [Project Overview](#project-overview)
-- [Architecture & Design](#architecture--design)
-  - [Component-Based Architecture](#component-based-architecture)
-  - [Tech Stack](#tech-stack)
-- [Installation and Setup](#installation-and-setup)
-- [Running the Application](#running-the-application)
+*Developed in collaboration with **Google Antigravity**.*
 
 ---
 
-## Project Overview
+## InkToChat (The Pictochat Experience)
 
-This frontend serves as the UI layer for the DataTracker system, connecting to a Go backend. It is designed to provide a seamless user experience for managing profiles, viewing analytics, and performing administrative tasks.
+InkToChat allows users to join real-time drawing lobbies with zero friction (no passwords). 
+
+### Key Features:
+- **Persistent Lobbies**: Rooms A, B, C, and D with live player counts.
+- **1-Bit Canvas**: A pixel-perfect drawing board (256x192) restricted to black and white.
+- **Binary Compression**: Drawings are compressed into a **49,152-bit** array before being sent to the Go backend to minimize storage and bandwidth costs.
+- **Real-time Presence**: Automatic Join/Leave tracking via Firebase Realtime Database (`onDisconnect` hooks).
+- **Circular Buffer**: Smart chat history that maintains exactly 100 messages per room, managed by the Go orchestration layer.
 
 ---
 
 ## Architecture & Design
 
-Unlike traditional N-Tier backend architectures, this frontend utilizes a **Component-Based Architecture**. This approach decomposes the user interface into independent, reusable pieces ("components") that manage their own state and rendering, while leveraging a central "Service" layer for global state.
+The application follows a **Component-Based Architecture**, separating state management from the visual layer.
 
-### Component-Based Structure
-
-We have organized the codebase to separate "Logic", "Views", and "UI Elements":
-
-1.  **Context Layer (The "Service" Layer)**
-    *   **`src/context/AuthContext.jsx`**: Acts as the application's brain for user sessions. It manages the global state (User, Token), handles persistence via `localStorage`, and exposes methods like `login()`, `register()`, and `logout()` to the rest of the app. This isolates complex logic from the UI.
-
-2.  **Pages Layer (The "Views")**
-    *   **`src/pages/AuthPage.jsx`**: Manages the entry experience, toggling between Login and Registration forms.
-    *   **`src/pages/Dashboard.jsx`**: The main hub for authenticated users. It acts as a "smart container," orchestrating data flow between the Context and visual components.
-
-3.  **Components Layer (The "UI Elements")**
-    *   **`src/components/Layout.jsx`**: Provides the structural shell (Navigation, Responsive Wrapping) to ensure consistency across pages.
-    *   **`src/components/ProfileCard.jsx`**: A reusable card component for displaying and editing user details.
-    *   **`src/components/AdminPanel.jsx`**: A dedicated administrative interface for user management (Role Editing, User Deletion), conditionally rendered based on permissions.
-
-### Tech Stack
-
--   **Core Framework:** **React 18** + **Vite** (for instant server start and HMR).
--   **Styling:** **Tailwind CSS (v4)**. We use utility-first CSS for rapid, responsive UI development without standard CSS file bloat.
--   **State Management:** **React Context API**.
--   **Form Handling:** **React Hook Form**. Eliminates manual state management for inputs and provides robust validation.
--   **Network:** **Axios**. Used for communicating with the Go backend.
--   **UI Feedback:** **SweetAlert2**. Provides beautiful, promise-based popup modals for user interactions (e.g., "Are you sure you want to delete this?").
+### Core Modules:
+1.  **State Management (Zustand & Context)**
+    *   **`store/useAppStore.js`**: Managed global state for InkToChat (Username, Session Tokens, Active Room).
+    *   **`context/AuthContext.jsx`**: Handles legacy DataTracker sessions (JWT/Email/Password).
+2.  **The View Layer (Pages)**
+    *   **`AuthPage.jsx`**: A retro-styled entry point for claiming usernames via the Go "Gatekeeper" (Bloom Filter).
+    *   **`LobbySelection.jsx`**: Real-time room navigator with live RTDB presence streams.
+    *   **`ChatRoom.jsx`**: Dual-panel interface for real-time messaging and the drawing canvas.
+    *   **`AdminDashboard.jsx`**: Monitors global metrics and Circular Buffer health.
+3.  **The UI Toolkit (`src/components`)**
+    *   **`CanvasComponent.jsx`**: Custom drawing logic with 1-bit compression engine.
+    *   **`Panel.jsx` / `Button.jsx`**: High-fidelity Nintendo DS BIOS recreations using custom Tailwind v4 themes and dithered backgrounds.
 
 ---
 
 ## Installation and Setup
 
-### Prerequisites
-
-- [Node.js](https://nodejs.org/) (version 18 or newer)
-- [npm](https://www.npmjs.com/)
-
 ### 1. Install Dependencies
-
 Navigate to the project directory and install the required packages:
-
 ```bash
 cd datatracker-ui
 npm install
 ```
 
-### 2. Configuration
+### 2. Configuration (`.env`)
+Copy `.env.example` to `.env` and fill in your **Public Firebase Web Configuration**. 
 
-Ensure the application is configured to point to your running backend. By default, it looks for the API at `http://localhost:8081/api`.
+#### Where to get these values?
+1.  Go to the [Firebase Console](https://console.firebase.google.com/).
+2.  Select **Project Settings** (Gear icon ⚙️) -> **General**.
+3.  Scroll to **Your apps** -> **Web App** -> **Config**.
+4.  Copy the values into your `.env`:
+
+```env
+VITE_FIREBASE_API_KEY=your_key
+VITE_FIREBASE_AUTH_DOMAIN=your-app.firebaseapp.com
+VITE_FIREBASE_PROJECT_ID=your-app
+VITE_FIREBASE_STORAGE_BUCKET=your-app.appspot.com
+VITE_FIREBASE_MESSAGING_SENDER_ID=your_id
+VITE_FIREBASE_APP_ID=your_app_id
+# Required for Presence/Lobby counts:
+VITE_FIREBASE_DATABASE_URL=https://your-app-default-rtdb.firebaseio.com/
+```
 
 ---
 
 ## Running the Application
 
 To start the development server:
-
 ```bash
 npm run dev
 ```
-
-The application will typically launch at `http://localhost:5173` (or similar).
-localhost:5173 is the default address for the Vite development server.
+The application typically launches at `http://localhost:5173`. Ensure your Go Backend is running on port **8081** for the Gatekeeper and Drawing endpoints to function.

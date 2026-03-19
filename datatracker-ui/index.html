@@ -5,6 +5,33 @@
   <meta charset="UTF-8" />
   <link rel="icon" type="image/svg+xml" href="/vite.svg" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <!--
+    Content Security Policy (CSP) — Primary XSS Mitigation Layer
+    - script-src 'self': blocks inline scripts and CDN injection
+    - style-src 'self' 'unsafe-inline': required for Tailwind/dynamic styles
+    - connect-src: limits API calls to known backends and Firebase
+    - img-src 'self' data: blob:: allows canvas exports and inline images
+    - object-src 'none': blocks Flash/plugin-based attacks
+    - base-uri 'self': prevents <base> tag hijacking
+    - form-action 'self': prevents form submission to external domains
+  -->
+  <meta http-equiv="Content-Security-Policy"
+    content="
+      default-src 'self';
+      script-src 'self';
+      style-src 'self' 'unsafe-inline';
+      connect-src 'self'
+        https://*.firebaseio.com
+        https://*.googleapis.com
+        wss://*.firebaseio.com
+        https://*.firebaseapp.com;
+      img-src 'self' data: blob:;
+      font-src 'self' https://fonts.gstatic.com;
+      object-src 'none';
+      base-uri 'self';
+      form-action 'self';
+    "
+  />
   <title>datatracker-ui</title>
   <link rel="stylesheet" href="src/index.css">
 </head>
