@@ -12,16 +12,16 @@ import { useAuth } from '../context/AuthContext';
 const AuthPage = () => {
     const { login, register: apiRegister, user, logout: apiLogout } = useAuth();
     const { logout: guestLogout, username, firebaseToken } = useAppStore();
-    
+
     // Auth Modes: 0: Guest, 1: Login, 2: Register
-    const [mode, setMode] = useState(0); 
-    
+    const [mode, setMode] = useState(0);
+
     const [nameInput, setNameInput] = useState('');
     const [email, setEmail] = useState('');
     const [usernameInput, setUsernameInput] = useState('');
     const [password, setPassword] = useState('');
     const [loading, setLoading] = useState(false);
-    
+
     const { setUsername, setFirebaseToken } = useAppStore();
     const navigate = useNavigate();
 
@@ -63,7 +63,7 @@ const AuthPage = () => {
         e.preventDefault();
         if (!email || !password) return;
         setLoading(true);
-        
+
         const res = await login(email, password);
         if (res.success) {
             // After DataTracker login, claim using the account name
@@ -88,25 +88,43 @@ const AuthPage = () => {
         setLoading(false);
     };
 
+    const handleForgotPassword = async (e) => {
+        e.preventDefault();
+        if (!email) {
+            Swal.fire('Missing Data', 'Please enter your email to recover your account.', 'warning');
+            return;
+        }
+        setLoading(true);
+        try {
+            const res = await api.post('/users/forgot-password', { email });
+            Swal.fire('Request Received', res.data.message, 'info');
+            setMode(1); // Return to login
+        } catch (err) {
+            Swal.fire('System Error', err.response?.data?.error || 'Failed to initiate recovery.', 'error');
+        } finally {
+            setLoading(false);
+        }
+    };
+
     return (
         <div className="flex flex-col items-center justify-center min-h-screen bg-picto-bg px-4 overflow-hidden relative">
             <div className="absolute inset-0 pointer-events-none opacity-5 dither-mask"></div>
 
             <Panel title="InkToChat Gateway" className="w-full max-w-sm relative z-10 shadow-lg">
                 <div className="flex border-b-2 border-picto-border mb-6 font-ds text-xs font-bold uppercase tracking-tight">
-                    <button 
+                    <button
                         onClick={() => setMode(0)}
                         className={`flex-1 py-3 transition-colors ${mode === 0 ? 'bg-picto-border text-white' : 'bg-picto-panel hover:bg-gray-200 text-picto-border'}`}
                     >
                         GUEST
                     </button>
-                    <button 
+                    <button
                         onClick={() => setMode(1)}
                         className={`flex-1 py-3 border-l-2 border-picto-border transition-colors ${mode === 1 ? 'bg-picto-accent text-white' : 'bg-picto-panel hover:bg-gray-200 text-picto-border'}`}
                     >
                         LOGIN
                     </button>
-                    <button 
+                    <button
                         onClick={() => setMode(2)}
                         className={`flex-1 py-3 border-l-2 border-picto-border transition-colors ${mode === 2 ? 'bg-blue-500 text-white' : 'bg-picto-panel hover:bg-gray-200 text-picto-border'}`}
                     >
@@ -153,6 +171,13 @@ const AuthPage = () => {
                             <Button type="submit" disabled={loading} className="w-full h-14 !bg-picto-accent text-white uppercase font-bold">
                                 {loading ? 'AUTHENTICATING...' : 'SECURE LOGIN'}
                             </Button>
+                            <button
+                                type="button"
+                                onClick={() => setMode(3)}
+                                className="text-[10px] opacity-50 hover:opacity-100 uppercase font-bold tracking-widest mt-1"
+                            >
+                                Forgot Password?
+                            </button>
                         </form>
                     )}
 
@@ -169,6 +194,29 @@ const AuthPage = () => {
                         </form>
                     )}
 
+                    {mode === 3 && (
+                        <form onSubmit={handleForgotPassword} className="flex flex-col gap-4 py-2 font-ds">
+                            <p className="text-xs opacity-70 text-center uppercase tracking-wider">Account Recovery:</p>
+                            <input
+                                type="email"
+                                value={email}
+                                onChange={(e) => setEmail(e.target.value)}
+                                className="bg-white border-2 border-picto-border p-3 text-sm outline-none focus:border-picto-accent"
+                                placeholder="REGISTERED EMAIL"
+                            />
+                            <Button type="submit" disabled={loading} className="w-full h-14 !bg-orange-500 text-white uppercase font-bold">
+                                {loading ? 'SENDING...' : 'SEND RESET LINK'}
+                            </Button>
+                            <button 
+                                type="button" 
+                                onClick={() => setMode(1)}
+                                className="text-[10px] opacity-40 hover:opacity-100 uppercase tracking-widest font-bold mt-2"
+                            >
+                                Return to Login
+                            </button>
+                        </form>
+                    )}
+
                     {user && (
                         <div className="mt-6 pt-6 border-t-2 border-dashed border-picto-border text-center">
                             <p className="text-xs mb-3 uppercase font-bold text-picto-accent">Account Detected: {user.username}</p>
@@ -181,7 +229,7 @@ const AuthPage = () => {
                 </div>
             </Panel>
             <footer className="mt-8 text-xs font-ds text-picto-border opacity-50 uppercase tracking-[0.2em] text-center">
-                IDENTITY PROTOCOL v2.1 • PIC-004-GATEWAY
+                LOG IN THE SYSTEM AS A GUEST OR REGISTER TO CREATE A PERMANENT IDENTITY
             </footer>
         </div>
     );

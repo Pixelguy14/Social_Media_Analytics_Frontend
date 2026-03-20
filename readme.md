@@ -1,42 +1,41 @@
 # InkToChat & DataTracker Frontend
 
-A modern, responsive Single Page Application (SPA) built with **React** and **Vite**. This project serves as a dual-modality platform:
-1.  **DataTracker**: A professional analytics suite with permanent accounts.
-2.  **InkToChat**: A "Zero-Friction" replication of the Nintendo DS Pictochat experience.
+A high-fidelity, distributed Single Page Application (SPA) built with **React** and **Vite**. This platform serves a dual-modality purpose:
 
-*Developed in collaboration with **Google Antigravity**.*
+1.  **DataTracker**: A professional, account-based analytics suite for persistent identity.
+2.  **InkToChat**: A "Zero-Friction" real-time replication of the vintage Nintendo DS Pictochat experience, featuring real-time drawing and presence.
 
 ---
 
-## InkToChat (The Pictochat Experience)
+## 🎨 InkToChat Core Features
 
-InkToChat allows users to join real-time drawing lobbies with zero friction (no passwords). 
-
-### Key Features:
-- **Persistent Lobbies**: Rooms A, B, C, and D with live player counts.
-- **1-Bit Canvas**: A pixel-perfect drawing board (256x192) restricted to black and white.
-- **Binary Compression**: Drawings are compressed into a **49,152-bit** array before being sent to the Go backend to minimize storage and bandwidth costs.
-- **Real-time Presence**: Automatic Join/Leave tracking via Firebase Realtime Database (`onDisconnect` hooks).
-- **Circular Buffer**: Smart chat history that maintains exactly 100 messages per room, managed by the Go orchestration layer.
+- **Zero-Friction Entry**: Simple username-based "handshake" protocol with bloom-filter validation.
+- **1-Bit Canvas Engine**: A pixel-perfect 256x192 drawing board that respects retro hardware constraints.
+- **Real-Time Presence**: Intelligent session tracking across 4 persistent lobbies (A, B, C, D) via Firebase `onDisconnect` synchronization.
+- **Optimized Data Transfer**: Drawings are bit-packed into a **6KB binary blob** (49,152 bits) to minimize latency and server load.
+- **Circular Buffer History**: Smart message management that maintains a "sliding window" of the latest 100 entries per room.
 
 ---
 
 ## Architecture & Design
 
-The application follows a **Component-Based Architecture**, separating state management from the visual layer.
+The project implements a **Component-Based Architecture** focused on distributed state synchronization.
 
-### Core Modules:
-1.  **State Management (Zustand & Context)**
-    *   **`store/useAppStore.js`**: Managed global state for InkToChat (Username, Session Tokens, Active Room).
-    *   **`context/AuthContext.jsx`**: Handles legacy DataTracker sessions (JWT/Email/Password).
-2.  **The View Layer (Pages)**
-    *   **`AuthPage.jsx`**: A retro-styled entry point for claiming usernames via the Go "Gatekeeper" (Bloom Filter).
-    *   **`LobbySelection.jsx`**: Real-time room navigator with live RTDB presence streams.
-    *   **`ChatRoom.jsx`**: Dual-panel interface for real-time messaging and the drawing canvas.
-    *   **`AdminDashboard.jsx`**: Monitors global metrics and Circular Buffer health.
-3.  **The UI Toolkit (`src/components`)**
-    *   **`CanvasComponent.jsx`**: Custom drawing logic with 1-bit compression engine.
-    *   **`Panel.jsx` / `Button.jsx`**: High-fidelity Nintendo DS BIOS recreations using custom Tailwind v4 themes and dithered backgrounds.
+- **State Orchestration**:
+    *   **Zustand (`store/useAppStore.js`)**: Manages ephemeral InkToChat state (Usernames, active rooms, and server-issued custom tokens).
+    *   **React Context (`context/AuthContext.jsx`)**: Manages persistent DataTracker sessions (JWT lifecycle, user sanitization).
+- **Communication Protocol**:
+    *   **Axios Interceptors**: Centralized handling of `401 Unauthorized` and `403 Forbidden` responses for robust security.
+    *   **Env-Driven Configuration**: Fully portable deployment via `VITE_` infrastructure.
+
+---
+
+## 🛡️ Security Posture
+
+- **Content Security Policy (CSP)**: Hardened meta-tag implementation restricting script execution and unauthorized cross-origin requests.
+- **XSS Mitigation**: 100% reliance on JSX auto-escaping and zero-use of `dangerouslySetInnerHTML`.
+- **Identity Obfuscation**: Displayed IDs are sanitized to prevent enumeration/IDOR risks.
+- **Sanitized Persistence**: User objects are stripped of sensitive fields (e.g., password hashes) before being stored in local caching.
 
 ---
 
@@ -49,32 +48,16 @@ cd datatracker-ui
 npm install
 ```
 
-### 2. Configuration (`.env`)
-Copy `.env.example` to `.env` and fill in your **Public Firebase Web Configuration**. 
+### 2. Configuration
+Copy `.env.example` to `.env` and fill in your Firebase Web and API configuration.
 
-#### Where to get these values?
-1.  Go to the [Firebase Console](https://console.firebase.google.com/).
-2.  Select **Project Settings** (Gear icon ⚙️) -> **General**.
-3.  Scroll to **Your apps** -> **Web App** -> **Config**.
-4.  Copy the values into your `.env`:
-
-```env
-VITE_FIREBASE_API_KEY=your_key
-VITE_FIREBASE_AUTH_DOMAIN=your-app.firebaseapp.com
-VITE_FIREBASE_PROJECT_ID=your-app
-VITE_FIREBASE_STORAGE_BUCKET=your-app.appspot.com
-VITE_FIREBASE_MESSAGING_SENDER_ID=your_id
-VITE_FIREBASE_APP_ID=your_app_id
-# Required for Presence/Lobby counts:
-VITE_FIREBASE_DATABASE_URL=https://your-app-default-rtdb.firebaseio.com/
+```bash
+cp .env.example .env
 ```
 
----
-
-## Running the Application
-
-To start the development server:
+### 3. Development
 ```bash
+cd datatracker-ui
 npm run dev
 ```
 The application typically launches at `http://localhost:5173`. Ensure your Go Backend is running on port **8081** for the Gatekeeper and Drawing endpoints to function.

@@ -26,7 +26,7 @@ const LobbySelection = () => {
         });
 
         return () => {
-             unsubscribes.forEach(unsub => unsub());
+            unsubscribes.forEach(unsub => unsub());
         };
     }, []);
 
@@ -56,15 +56,15 @@ const LobbySelection = () => {
                 {/* Rooms Grid */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-8 w-full max-w-3xl px-4">
                     {rooms.map(r => (
-                        <Panel 
-                            key={r} 
-                            className="group transition-all hover:translate-y-[-4px] hover:shadow-[8px_8px_0_0_rgba(66,66,66,1)] active:translate-y-[2px] active:shadow-none cursor-pointer" 
-                            title={`Room ${r}`} 
+                        <Panel
+                            key={r}
+                            className="group transition-all hover:translate-y-[-4px] hover:shadow-[8px_8px_0_0_rgba(66,66,66,1)] active:translate-y-[2px] active:shadow-none cursor-pointer"
+                            title={`Room ${r}`}
                             subtitle={`${counts[r] || 0} / 16 Active Users`}
                         >
                             <div className="mt-6 flex flex-col gap-4">
                                 <div className="w-full bg-picto-bg border-2 border-picto-border h-4 relative overflow-hidden">
-                                    <div 
+                                    <div
                                         className={`h-full transition-all duration-700 ${counts[r] >= 14 ? 'bg-red-500' : 'bg-picto-accent'}`}
                                         style={{ width: `${(counts[r] / 16) * 100}%` }}
                                     ></div>
@@ -80,7 +80,7 @@ const LobbySelection = () => {
                 </div>
 
                 <footer className="opacity-30 text-[10px] sm:text-xs font-bold uppercase tracking-[0.3em] mt-4">
-                    Connection Established • Node-DS-2026
+                    CHOOSE A LOBBY TO START MESSAGING
                 </footer>
             </div>
         </div>

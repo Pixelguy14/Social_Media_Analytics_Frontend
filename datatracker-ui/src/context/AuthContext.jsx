@@ -57,14 +57,24 @@ export const AuthProvider = ({ children }) => {
         }
     };
 
-    const minLength = 8;
     // Password strength validation
     function validatePassword(password) {
-        return password.length >= minLength && /\d/.test(password) && /[A-Z]/.test(password);
+        const minLength = 8;
+
+        // \p{Lu} matches any Unicode uppercase letter
+        // \d matches any digit
+        const hasUppercase = /\p{Lu}/u.test(password);
+        const hasNumber = /\d/.test(password);
+        const isLongEnough = password.length >= minLength;
+
+        return hasUppercase && hasNumber && isLongEnough;
     }
 
-    const register = async (username, email, password) => {
+    const register = async (name, email, username, password) => {
         try {
+            // SECURITY: Frontend validation is purely for UX.
+            // Malicious actors can bypass this using Postman/cURL.
+            // The backend MUST perform the same (or stricter) validation.
             if (!validatePassword(password)) {
                 return {
                     success: false,
@@ -72,7 +82,7 @@ export const AuthProvider = ({ children }) => {
                 };
             }
             // 1. Create User
-            await api.post('/users/', { username, email, password });
+            await api.post('/users/', { name, username, email, password });
 
             // 2. Auto-login
             return await login(email, password);
@@ -94,6 +104,7 @@ export const AuthProvider = ({ children }) => {
 
     // SECURITY: Sanitize server response before persisting to localStorage.
     // Only keep fields the UI actually needs — strip passwordHash, internal IDs, etc.
+    // BEST PRACTICE: Move to HttpOnly and Secure cookies via the backend.
     const sanitize_user_data = (raw) => {
         if (!raw) return null;
         const { passwordHash, password, __v, ...safe } = raw;

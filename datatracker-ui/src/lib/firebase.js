@@ -4,8 +4,9 @@ import { getDatabase } from "firebase/database";
 import { getFirestore } from "firebase/firestore";
 
 // SECURITY: Firebase config uses PUBLIC keys (safe for frontend bundles),
-// but we still load them from env vars to avoid leaking project identifiers
-// into version control. See .env.example for required variables.
+// but we still load them from env vars to avoid leaking project identifiers.
+// NOTE: VITE_ variables are baked into the build at build time.
+// Rebuild is required if variables are changed in the environment.
 const requiredEnvVars = [
     'VITE_FIREBASE_API_KEY',
     'VITE_FIREBASE_AUTH_DOMAIN',

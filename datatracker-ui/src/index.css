@@ -16,7 +16,7 @@
 }
 
 @utility bg-dither {
-  background-image: url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAYAAABytg0kAAAAD0lEQVQImWNgYGBoYAAAAX8Ax9966mUAAAAASUVORK5CYII=");
+  background-image: url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAYAAABytg0kAAAAFElEQVQImWNkYGBoYGBgYOBmYGAAABIAAf8SRE5iAAAAAElFTkSuQmCC");
 }
 
 :root {

@@ -126,6 +126,7 @@ const ProfileCard = () => {
                         </div>
                         <div className="lg:col-span-3 border-2 border-picto-panel-dark p-2 bg-black/5">
                             <dt className="text-[10px] uppercase opacity-40 font-mono italic">Trace ID</dt>
+                            {/* SECURITY: Raw IDs displayed here should ideally be UUIDs to prevent IDOR/Enumeration attacks. */}
                             <dd className="text-[10px] font-mono opacity-50 break-all">{user?.id}</dd>
                         </div>
                     </div>
